@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
+from typing import Type
 
 
 @dataclass
@@ -10,13 +11,15 @@ class InfoMessage:
     speed: float
     calories: float
 
+    INFOMESSAGE: str = ('Тип тренировки: {0}; '
+                        'Длительность: {1:0.3f} ч.; '
+                        'Дистанция: {2:0.3f} км; '
+                        'Ср. скорость: {3:0.3f} км/ч; '
+                        'Потрачено ккал: {4:0.3f}.')
+
     def get_message(self) -> str:
         """Возвращает строку сообщения"""
-        return ('Тип тренировки: {0}; Длительность: '
-                '{1:0.3f} ч.; Дистанция: {2:0.3f} км; '
-                'Ср. скорость: {3:0.3f} км/ч; Потрачено ккал: '
-                '{4:0.3f}.').format(self.training_type, self.duration,
-                                    self.distance, self.speed, self.calories)
+        return self.INFOMESSAGE.format(*asdict(self).values())
 
 
 class Training:
@@ -40,11 +43,12 @@ class Training:
 
     def get_spent_calories(self) -> float:
         """Получить количество затраченных калорий."""
-        return NotImplementedError
+        raise NotImplementedError('Производный класс должен переопределить '
+                                  'данный метод')
 
     def show_training_info(self) -> InfoMessage:
         """Вернуть информационное сообщение о выполненной тренировке."""
-        return InfoMessage(self.__class__.__name__, self.duration,
+        return InfoMessage(type(self).__name__, self.duration,
                            self.get_distance(),
                            self.get_mean_speed(),
                            self.get_spent_calories())
@@ -108,12 +112,14 @@ class Swimming(Training):
 
 def read_package(workout_type: str, data: list) -> Training:
     """Прочитать данные полученные от датчиков."""
-    type_training: dict[str, Training] = {
+    type_training: dict[str, Type[Training]] = {
         'SWM': Swimming,
         'RUN': Running,
-        'WLK': SportsWalking}
+        'WLK': SportsWalking,
+    }
+
     if workout_type not in type_training:
-        return ValueError
+        raise ValueError('Такой вид тренировки не предусмотрен')
     return type_training[workout_type](*data)
 
 
